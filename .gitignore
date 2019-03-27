@@ -1,0 +1,47 @@
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+mvnw*
+.mvn
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/build/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### Xgame Compiled ###
+xgame-server-admin/target/
+xgame-server-api/target/
+xgame-server-base/target/
+xgame-server-common/target/
+xgame-job-admin/target/
+xgame-job-core/target/
+xgame-job-executor/target/
+xgame-open-platform/target/
+
+api/target/
+admin/target/
+common-base/target
+common-biz/target
+order-message-consumer/target
+service/target
+service/*/target
+
+
