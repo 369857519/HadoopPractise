@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<configuration>
+  <property>
+    <name>height</name>
+    <value>12</value>
+  </property>
+  <property>
+    <name>character</name>
+    <value>${height}and${weight}</value>
+  </property>
+</configuration>

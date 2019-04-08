@@ -1,4 +1,4 @@
-package hadoopPractise.MapReduce;
+package hadoopPractise.MapReduce.version1;
 
 import java.io.IOException;
 import org.apache.hadoop.io.IntWritable;
