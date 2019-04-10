@@ -1,4 +1,4 @@
-package hadoopPractise.MapReduce.version1;
+package hadoopPractise.MapReduce.version2;
 
 import java.io.IOException;
 import org.apache.hadoop.fs.Path;
@@ -28,7 +28,7 @@ public class MaxTemperature {
 		FileOutputFormat.setOutputCompressorClass(job,GzipCodec.class);
 
 		job.setMapperClass(MaxTemperatureMapper.class);
-		job.setReducerClass(hadoopPractise.MapReduce.version1.MaxTemperatureReducer.class);
+		job.setReducerClass(MaxTemperatureReducer.class);
 		job.setCombinerClass(MaxTemperatureReducer.class);
 
 		job.setOutputKeyClass(Text.class);
