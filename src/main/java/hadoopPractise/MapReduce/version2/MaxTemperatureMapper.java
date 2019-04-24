@@ -9,6 +9,10 @@ import org.apache.hadoop.mapreduce.Mapper;
 public class MaxTemperatureMapper extends
 	Mapper<LongWritable, Text, Text, IntWritable> {
 
+	enum Temperature{
+		OVER_100;
+	}
+
 	private NcdcRecordParser parser=new NcdcRecordParser();
 
 	@Override
@@ -16,6 +20,12 @@ public class MaxTemperatureMapper extends
 		throws IOException, InterruptedException {
 		parser.parse(value);
 		if(parser.isValidTemperature()){
+			int airTmeperature=parser.getAirTemperature();
+			if(airTmeperature>1000){
+				System.err.println("Temperature over 100 degrees for input: "+value);
+				context.setStatus("Detected possibly corrupt record: see logs.");
+				context.getCounter(Temperature.OVER_100).increment(1L);
+			}
 			context.write(new Text(parser.getYear()),new IntWritable(parser.getAirTemperature()));
 		}
 	}
