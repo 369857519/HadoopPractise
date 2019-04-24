@@ -10,7 +10,8 @@ public class MaxTemperatureMapper extends
 	Mapper<LongWritable, Text, Text, IntWritable> {
 
 	enum Temperature{
-		OVER_100;
+		OVER_100,
+		MALFORMED
 	}
 
 	private NcdcRecordParser parser=new NcdcRecordParser();
@@ -27,6 +28,8 @@ public class MaxTemperatureMapper extends
 				context.getCounter(Temperature.OVER_100).increment(1L);
 			}
 			context.write(new Text(parser.getYear()),new IntWritable(parser.getAirTemperature()));
+		}else{
+			context.getCounter(Temperature.MALFORMED).increment(1);
 		}
 	}
 }

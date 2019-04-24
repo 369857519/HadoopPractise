@@ -24,8 +24,6 @@ public class MaxTemperature {
 
 		FileInputFormat.addInputPath(job,new Path(args[0]));
 		FileOutputFormat.setOutputPath(job,new Path(args[1]));
-//		FileOutputFormat.setCompressOutput(job,true);
-//		FileOutputFormat.setOutputCompressorClass(job,GzipCodec.class);
 
 		job.setMapperClass(MaxTemperatureMapper.class);
 		job.setReducerClass(MaxTemperatureReducer.class);
