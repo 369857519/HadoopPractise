@@ -1,5 +1,7 @@
-import org.apache.spark.SparkConf
-import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.apache.spark._
+import org.apache.spark.streaming._
+import org.apache.spark.streaming.StreamingContext._ // not necessary since Spark 1.3
+
 
 object streamingTest {
   def main(args: Array[String]): Unit = {
@@ -7,14 +9,14 @@ object streamingTest {
   }
 
   def test(): Unit ={
-    val outPutPath=Util.directory+"/streamingOutput"
-    val conf=new SparkConf().setAppName("mySpark")
-    conf.setMaster("local")
-    val ssc = new StreamingContext(conf,Seconds(1))
-    val lines = ssc.socketTextStream("localhost",7777)
-    val errorLines = lines.filter(_.contains("error"))
-    errorLines.print()
-    ssc.textFileStream(outPutPath)
+    val conf = new SparkConf().setMaster("local[2]").setAppName("NetworkWordCount")
+    val ssc = new StreamingContext(conf, Seconds(1))
+    val lines = ssc.socketTextStream("localhost", 9999)
+    val words=lines.flatMap(_.split(" "))
+    val pairs=words.map(word=>(word,1))
+    val wordCounts=pairs.reduceByKey(_ + _)
+
+    wordCounts.print()
     ssc.start()
     ssc.awaitTermination()
   }
