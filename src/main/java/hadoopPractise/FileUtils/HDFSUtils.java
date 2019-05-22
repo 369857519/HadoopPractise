@@ -59,12 +59,12 @@ public class HDFSUtils {
 
 	public static void copy(FileSystem fs, String src, String dst) throws IOException {
 		InputStream in = new BufferedInputStream(new FileInputStream(src));
-		OutputStream out = fs.create(new Path(dst), new Progressable() {
-			@Override
-			public void progress() {
-				System.out.println(".");
-			}
-		});
-		IOUtils.copyBytes(in, out, 4096, true);
+//		OutputStream out = fs.create(new Path(dst), new Progressable() {
+//			@Override
+//			public void progress() {
+//				System.out.println(".");
+//			}
+//		});
+//		IOUtils.copyBytes(in, out, 4096, true);
 	}
 }

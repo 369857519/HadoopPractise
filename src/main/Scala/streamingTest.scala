@@ -37,7 +37,7 @@ object streamingTest {
       Seconds(30),
       Seconds(10)
     )
-    pairCountDStream.saveAsHadoopFiles[SequenceFileOutputFormat[Text, LongWritable]]("outputDis", "txt")
+//    pairCountDStream.saveAsHadoopFiles[SequenceFileOutputFormat[Text, LongWritable]]("outputDis", "txt")
   }
 
   //响应代码计数
