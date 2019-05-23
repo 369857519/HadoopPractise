@@ -1,3 +1,4 @@
+package com.Scala
 import org.apache.spark.{SparkConf, SparkContext}
 
 object ReadFile {

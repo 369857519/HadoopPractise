@@ -25,7 +25,7 @@ public class confTest extends Configured implements Tool {
 		System.exit(exitCode);
 	}
 
-	@Override
+//	@Override
 	public int run(String[] strings) throws Exception {
 		Configuration configuration=getConf();
 		for(Entry<String,String> entry:configuration){
