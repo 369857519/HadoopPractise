@@ -1,114 +1,105 @@
-import org.apache.log4j.BasicConfigurator
-import org.apache.spark.mllib.recommendation._
+import breeze.linalg.{max, min}
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.ml.recommendation.{ALS, ALSModel}
+import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 
+import scala.util.Random
+
+//hdfs://localhost/user/ds/artist_data.txt"
 object MusicRecommend {
 
+}
 
-  def music(): Unit = {
-    val sc = Util.getSc()
-    //用户对于艺术家的访问次数 用户 艺术家 分数
-    val rawUserArtistData = sc.textFile("hdfs://localhost/user/ds/user_artist_data.txt")
+class RunRecommender(private val spark: SparkSession) {
 
-    //    val userIds = rawUserArtistData.map(_.split(' ')(0).toDouble)
-    //    println(userIds.stats().toString())
-    //    val artistIds = rawUserArtistData.map(_.split(' ')(1).toDouble)
-    //    println(artistIds.stats().toString())
+  import spark.implicits._
+  import org.apache.spark.sql.functions._
 
-    val rawArtistData = sc.textFile("hdfs://localhost/user/ds/artist_data.txt")
-
-    //这里的flatmap是把结果中的someflat掉。
-    val artistByID = rawArtistData.flatMap {
+  def preparation(rawUserArtistData: Dataset[String], rawArtistData: Dataset[String], rawArtistAlias: Dataset[String]): Unit = {
+    rawUserArtistData.take(5).foreach(println)
+    val userArtistDF = rawArtistData.map {
       line =>
-        val (id, name) = line.span(_ != '\t')
-        if (name.isEmpty) {
-          None
-        } else {
-          try {
-            Some((id.toInt, name.trim))
-          } catch {
-            case e: NumberFormatException => None
-          }
-        }
-    }
-
-    val rawArtistAlias = sc.textFile("hdfs://localhost/user/ds/artist_alias.txt")
-    val artistAlias = rawArtistAlias.flatMap {
-      line =>
-        val tokens = line.split("\t")
-        if (tokens(0).isEmpty) {
-          None
-        } else {
-          try {
-            Some((tokens(0).toInt, tokens(1).toInt))
-          } catch {
-            case e: NumberFormatException => None
-          }
-        }
-    }.collectAsMap()
-    //    artistAlias.take(10).foreach(println)
-
-    //如果不做广播变量， artistAlias会随着任务一起被复制，每个任务会有一个闭包存储，JVM中可能会运行多个任务，耗费内存
-    //做个广播变量以后，每个executor内只发送一个副本，节省巨大的网络流量和内存
-    val bArtistAlias = sc.broadcast(artistAlias);
-
-    val trainData = rawUserArtistData.map {
-      line =>
-        val Array(userID, artistID, score) = line.split(" ").map(_.toInt)
-        val realArtistID = bArtistAlias.value.getOrElse(artistID, artistID)
-        Rating(userID, realArtistID, score.toDouble)
-    }.cache()
-    //als是迭代运算的，所以训练数据最好做一个cache，否则需要反复运算
-
-    val model = ALS.trainImplicit(trainData, 10, 5, 0.01, 1.0)
-    //als模型训练结束后会有用户feature和productfeature两个属性
-    //    model.userFeatures.mapValues(_.mkString(",")).take(10).map(println)
-    //查看数据
-    val recommendations = model.recommendProducts(2093760, 5);
-    recommendations.foreach(println)
-
-    val recommendProductIDs=recommendations.map(_.product).toSet
-
-    artistByID.filter{
-      case(id,_)=>recommendProductIDs.contains(id)
-    }.values.collect().foreach(println)
+        val Array(user, artist, _*) = line.split(' ')
+        (user.toInt, artist.toInt)
+    }.toDF("user", "artist")
+    userArtistDF.agg(min("user"), max("user"), min("artist"), max("artist"))
+    val artistByID = buildArtistByID(rawArtistData)
+    val artistAlias = buildArtistAlias(rawArtistAlias)
+    val (badID, goodID) = artistAlias.head
+    artistByID.filter($"id" isin(badID, goodID)).show()
   }
 
-  def main(args: Array[String]): Unit = {
-    BasicConfigurator.configure()
-        music()
-//    usersRealPreference()
-  }
-
-  def usersRealPreference(): Unit = {
-    val sc = Util.getSc()
-    val rawUserArtistData = sc.textFile("hdfs://localhost/user/ds/user_artist_data.txt")
-    val rawArtistsForUser = rawUserArtistData.map(_.split(' ')).filter {
-      case Array(user, _, _) => user.toInt == 2093760
-    }
-
-    val existingProducts = rawArtistsForUser.map {
-      case Array(_, artist, _) => artist.toInt
-    }.collect().toSet
-
-    val rawArtistData = sc.textFile("hdfs://localhost/user/ds/artist_data.txt")
-
-    //这里的flatmap是把结果中的someflat掉。
-    val artistByID = rawArtistData.flatMap {
-      line =>
-        val (id, name) = line.span(_ != '\t')
-        if (name.isEmpty) {
-          None
-        } else {
-          try {
-            Some((id.toInt, name.trim))
-          } catch {
-            case e: NumberFormatException => None
-          }
+  def buildArtistByID(rawArtistData: Dataset[String]): DataFrame = {
+    rawArtistData.flatMap { line =>
+      val (id, name) = line.span(_ != '\t')
+      if (name.isEmpty) {
+        None
+      } else {
+        try {
+          Some((id.toInt, name.trim))
+        } catch {
+          case _: NumberFormatException => None
         }
-    }
-
-    artistByID.filter {
-      case (id, name) => existingProducts.contains(id)
-    }.values.collect().foreach(println)
+      }
+    }.toDF("id", "name")
   }
+
+  def buildArtistAlias(rawArtistAlias: Dataset[String]): Map[Int, Int] = {
+    rawArtistAlias.flatMap { line =>
+      val Array(artist, alias) = line.split('\t')
+      if (artist.isEmpty) {
+        None
+      } else {
+        Some((artist.toInt, alias.toInt))
+      }
+    }.collect().toMap
+  }
+
+  def model(rawUserArtistData: Dataset[String], rawArtistData: Dataset[String], rawArtistAlias: Dataset[String]): Unit = {
+    val bArtistAlias = spark.sparkContext.broadcast(buildArtistAlias(rawArtistAlias))
+
+    val trainData = buildCounts(rawUserArtistData, bArtistAlias).cache()
+    //implicitPref 隐式参数
+    //regParam 正则化参数()
+    //predictionCol
+    val model = new ALS().setSeed(Random.nextLong()).setImplicitPrefs(true)
+      .setRank(10).setRegParam(0.01).setAlpha(1.0).setUserCol("user").setItemCol("artist")
+      .setRatingCol("count").setPredictionCol("prediction").fit(trainData)
+
+    trainData.unpersist()
+    model.userFactors.select("features").show(truncate = false)
+
+    val userID = 2093760
+
+    val existingArsitsIDs = trainData.filter($"user" === userID).select("artist").as[Int].collect()
+
+    val artistByID = buildArtistByID(rawArtistData)
+
+    artistByID.filter($"id" isin (existingArsitsIDs: _*)).show()
+
+    val topRecommendations = makeRecommendations(model, userID, 5)
+    topRecommendations.show()
+
+    val recommendedArtistIDs = topRecommendations.select("artist").as[Int].collect()
+
+    artistByID.filter($"id" isin (recommendedArtistIDs: _*)).show()
+
+    model.userFactors.unpersist()
+    model.itemFactors.unpersist()
+  }
+
+  def buildCounts(rawUserArtistData: Dataset[String], bArtistAlias: Broadcast[Map[Int, Int]]): DataFrame = {
+    //记录user的次数，如果有alias，改一下artist的ID
+    rawUserArtistData.map { line =>
+      val Array(userID, artistID, count) = line.split(' ').map(_.toInt)
+      val finalArtistID = bArtistAlias.value.getOrElse(artistID, artistID)
+      (userID, finalArtistID, count)
+    }.toDF("user", "artist", "count")
+  }
+
+  def makeRecommendations(model: ALSModel, userID: Int, outputCount: Int): DataFrame = {
+    val toRecommend = model.itemFactors.select($"id".as("artist")).withColumn("user", lit(userID))
+    model.transform(toRecommend).select("artist", "prediction").orderBy($"prediction".desc).limit(outputCount)
+  }
+
 }
