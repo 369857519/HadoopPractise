@@ -6,7 +6,7 @@ import org.apache.spark.streaming.StreamingContext._
 import org.apache.spark.streaming.dstream.ReceiverInputDStream // not necessary since Spark 1.3
 
 
-object streamingTest {
+object StreamingTest {
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf().setMaster("local[2]").setAppName("NetworkWordCount")
     val ssc = new StreamingContext(conf, Seconds(1))
