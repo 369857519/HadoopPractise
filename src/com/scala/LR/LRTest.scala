@@ -16,12 +16,12 @@ object LRTest {
     val bank_Marketing_Data = spark.read
       .option("header", true)
       .option("inferSchema", "true")
-      .csv("/opt/train/bank_marketing_data.csv"
+      .csv("D:\\dataSpace\\bank_marketing_data.txt")
 
     val selected_data = bank_Marketing_Data.select("age",
-      "job", "marital", "housing", "loan", "duartion", "previous", "poutcome", "empvarrate", "y")
+      "job", "marital", "housing", "loan", "duration", "previous", "poutcome", "empvarrate", "y")
       .withColumn("age", bank_Marketing_Data("age").cast(DoubleType))
-      .withColumn("ducation", bank_Marketing_Data("duration").cast(DoubleType))
+      .withColumn("duration", bank_Marketing_Data("duration").cast(DoubleType))
       .withColumn("previous", bank_Marketing_Data("previous").cast(DoubleType))
 
     val indexer = new StringIndexer().setInputCol("job").setOutputCol("jobIndex")
