@@ -12,17 +12,29 @@ object LRTest {
     val spark = SparkSession.builder().appName("Logistic_Prediction")
       .master("local").getOrCreate()
     spark.sparkContext.setLogLevel("WARN")
+    import spark.implicits._
 
     val bank_Marketing_Data = spark.read
       .option("header", true)
       .option("inferSchema", "true")
       .csv("D:\\dataSpace\\bank_marketing_data.txt")
 
+//    bank_Marketing_Data.show(10)
+
     val selected_data = bank_Marketing_Data.select("age",
       "job", "marital", "housing", "loan", "duration", "previous", "poutcome", "empvarrate", "y")
       .withColumn("age", bank_Marketing_Data("age").cast(DoubleType))
       .withColumn("duration", bank_Marketing_Data("duration").cast(DoubleType))
       .withColumn("previous", bank_Marketing_Data("previous").cast(DoubleType))
+
+    selected_data.describe().show()
+    val columnNames=selected_data.columns
+    val uniqueValues_PreField=columnNames.map{
+      field=>
+        field+":"+selected_data.select(field).distinct().count()
+    }
+    uniqueValues_PreField.map(println)
+
 
     val indexer = new StringIndexer().setInputCol("job").setOutputCol("jobIndex")
     val indexed = indexer.fit(selected_data).transform(selected_data)
