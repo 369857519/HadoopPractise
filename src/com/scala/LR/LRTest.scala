@@ -22,18 +22,18 @@ object LRTest {
 //    bank_Marketing_Data.show(10)
 
     val selected_data = bank_Marketing_Data.select("age",
-      "job", "marital", "housing", "loan", "duration", "previous", "poutcome", "empvarrate", "y")
+      "job", "marital", "default","housing", "loan", "duration", "previous", "poutcome", "empvarrate", "y")
       .withColumn("age", bank_Marketing_Data("age").cast(DoubleType))
       .withColumn("duration", bank_Marketing_Data("duration").cast(DoubleType))
       .withColumn("previous", bank_Marketing_Data("previous").cast(DoubleType))
 
-    selected_data.describe().show()
-    val columnNames=selected_data.columns
-    val uniqueValues_PreField=columnNames.map{
-      field=>
-        field+":"+selected_data.select(field).distinct().count()
-    }
-    uniqueValues_PreField.map(println)
+//    selected_data.describe().show()
+//    val columnNames=selected_data.columns
+//    val uniqueValues_PreField=columnNames.map{
+//      field=>
+//        field+":"+selected_data.select(field).distinct().count()
+//    }
+//    uniqueValues_PreField.map(println)
 
 
     val indexer = new StringIndexer().setInputCol("job").setOutputCol("jobIndex")
@@ -41,7 +41,7 @@ object LRTest {
     indexed.show
     val encoder = new OneHotEncoder().setDropLast(false).setInputCol("jobIndex").setOutputCol("jobVec")
     val encoded = encoder.transform(indexed)
-
+    encoded.show()
     val maritalIndexer = new StringIndexer().setInputCol("marital").setOutputCol("maritalIndex")
     //注意：此处所使用的数据是job列应用OneHotEncoder算法后产生的数据encoded
     //这里不能使用原始数据selected_Data，因为原始数据中没有jobVec列。
